@@ -1,0 +1,36 @@
+package com.example.tracker.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "weeks")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Week {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(nullable = false)
+    private Long projectId;
+    
+    @Column(nullable = false)
+    private Integer weekNumber;
+    
+    @Column(nullable = false)
+    private LocalDate startDate;
+    
+    @Column(nullable = false)
+    private LocalDate endDate;
+    
+    private String description;
+    
+    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
+}
