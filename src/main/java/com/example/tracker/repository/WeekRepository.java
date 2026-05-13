@@ -8,5 +8,4 @@ import java.util.List;
 @Repository
 public interface WeekRepository extends JpaRepository<Week, Long> {
     List<Week> findByProjectId(Long projectId);
-    Week findByProjectIdAndWeekNumber(Long projectId, Integer weekNumber);
 }

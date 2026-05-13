@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weeks - Project Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar h1 {
+            font-size: 24px;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .navbar a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h2 {
+            color: #333;
+        }
+
+        .header p {
+            color: #666;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #718096;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4a5568;
+            transform: translateY(-2px);
+        }
+
+        .weeks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .week-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .week-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .week-title {
+            color: #667eea;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .week-dates {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+
+        .week-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .stat-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .week-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .btn-sm {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-view {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #38a169;
+        }
+
+        .btn-edit {
+            background: #ed8936;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #dd6b20;
+        }
+
+        .btn-delete {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #e53e3e;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            background: white;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            padding: 40px;
+            font-size: 16px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close {
+            cursor: pointer;
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .modal-footer button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .modal-footer .btn-cancel {
+            background: #f56565;
+            color: white;
+        }
+
+        .modal-footer .btn-cancel:hover {
+            background: #e53e3e;
+        }
+
+        .modal-footer .btn-submit {
+            background: #667eea;
+            color: white;
+        }
+
+        .modal-footer .btn-submit:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>📅 Weeks</h1>
+        <div>
+            <span th:text="${#authentication.name}"></span>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div>
+                <h2>📋 Your Project Weeks</h2>
+                <p>Manage weeks for your project</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openWeekModal()">➕ Create New Week</button>
+                <a href="/projects-list" class="btn btn-secondary">← Back to Projects</a>
+            </div>
+        </div>
+
+        <div class="weeks-grid" id="weeksContainer">
+            <div class="loading">Loading your weeks...</div>
+        </div>
+    </div>
+
+    <div id="weekModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>➕ Create New Week</span>
+                <span class="close" onclick="closeWeekModal()">&times;</span>
+            </div>
+            <form id="weekForm">
+                <div class="form-group">
+                    <label for="weekNumber">Week Number</label>
+                    <input type="number" id="weekNumber" name="weekNumber" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate" name="startDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate" name="endDate" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeWeekModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">Create Week</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    let projectId = null;
+
+    window.addEventListener('DOMContentLoaded', function() {
+        const pathParts = window.location.pathname.split('/');
+        projectId = pathParts[pathParts.length - 1];
+        
+        console.log('📅 Weeks page loading for Project ID:', projectId);
+        fetchWeeks();
+        
+        // AUTO-REFRESH EVERY 3 SECONDS FOR CURRENT USER'S DATA
+        setInterval(fetchWeeks, 3000);
+    });
+
+    async function fetchWeeks() {
+        try {
+            const url = `/api/weeks/project/${projectId}/with-counts`;
+            console.log('Fetching current user weeks from:', url);
+            
+            const response = await fetch(url);
+            console.log('Response status:', response.status);
+            
+            if (response.status === 403) {
+                document.getElementById('weeksContainer').innerHTML = '<div class="empty-message">❌ You do not have access to this project!</div>';
+                return;
+            }
+            
+            if (response.status === 404) {
+                document.getElementById('weeksContainer').innerHTML = '<div class="empty-message">No weeks yet. Create one to get started!</div>';
+                return;
+            }
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const weeks = await response.json();
+            console.log('✅ Weeks fetched for current user:', weeks);
+            
+            const container = document.getElementById('weeksContainer');
+
+            if (!weeks || weeks.length === 0) {
+                container.innerHTML = '<div class="empty-message">No weeks yet. Create one to get started!</div>';
+                return;
+            }
+
+            container.innerHTML = weeks.map(week => `
+                <div class="week-card">
+                    <div class="week-title">📅 Week ${week.weekNumber}</div>
+                    <div class="week-dates">
+                        <strong>Start:</strong> ${week.startDate}<br>
+                        <strong>End:</strong> ${week.endDate}
+                    </div>
+                    <div class="week-stats">
+                        <div class="stat">
+                            <div class="stat-number">${week.taskCount || 0}</div>
+                            <div class="stat-label">Tasks</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number">${week.completedCount || 0}</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                    <div class="week-actions">
+                        <button class="btn-sm btn-view" onclick="goToKanban(${week.id})">👁️ View</button>
+                        <button class="btn-sm btn-edit" onclick="alert('Edit coming soon')">✏️ Edit</button>
+                        <button class="btn-sm btn-delete" onclick="deleteWeek(${week.id})">🗑️ Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error fetching weeks:', error);
+            document.getElementById('weeksContainer').innerHTML = '<div class="empty-message">No weeks yet. Create one to get started!</div>';
+        }
+    }
+
+    function openWeekModal() {
+        document.getElementById('weekModal').classList.add('show');
+    }
+
+    function closeWeekModal() {
+        document.getElementById('weekModal').classList.remove('show');
+        document.getElementById('weekForm').reset();
+    }
+
+    document.getElementById('weekForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const week = {
+            weekNumber: parseInt(document.getElementById('weekNumber').value),
+            startDate: document.getElementById('startDate').value,
+            endDate: document.getElementById('endDate').value,
+            projectId: parseInt(projectId)
+        };
+
+        console.log('Creating week for current user:', week);
+
+        try {
+            const response = await fetch('/api/weeks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(week)
+            });
+
+            if (response.ok) {
+                alert('✅ Week created successfully!');
+                closeWeekModal();
+                setTimeout(() => {
+                    fetchWeeks();
+                }, 500);
+            } else {
+                const error = await response.text();
+                alert('❌ Failed to create week: ' + error);
+            }
+        } catch (error) {
+            alert('❌ Error: ' + error.message);
+        }
+    });
+
+    async function deleteWeek(weekId) {
+        if (confirm('Are you sure you want to delete this week?')) {
+            try {
+                const response = await fetch(`/api/weeks/${weekId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('✅ Week deleted successfully!');
+                    fetchWeeks();
+                } else {
+                    alert('❌ Failed to delete week');
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+    }
+
+    function goToKanban(weekId) {
+        window.location.href = `/kanban/week/${weekId}`;
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('weekModal');
+        if (event.target === modal) {
+            closeWeekModal();
+        }
+    }
+    </script>
+</body>
+</html>

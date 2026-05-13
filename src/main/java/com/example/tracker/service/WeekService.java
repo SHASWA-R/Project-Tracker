@@ -10,5 +10,6 @@ public interface WeekService {
     List<Week> getWeeksByProjectId(Long projectId);
     Week updateWeek(Long id, Week week);
     void deleteWeek(Long id);
-    Optional<Week> getWeekByProjectIdAndWeekNumber(Long projectId, Integer weekNumber);
+    int getTaskCountForWeek(Long weekId);
+    int getCompletedTaskCountForWeek(Long weekId);
 }

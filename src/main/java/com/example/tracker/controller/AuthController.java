@@ -2,12 +2,16 @@ package com.example.tracker.controller;
 
 import com.example.tracker.model.User;
 import com.example.tracker.service.UserService;
+import com.example.tracker.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Controller
 public class AuthController {
@@ -17,6 +21,9 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     // Show Login Page
     @GetMapping("/login")
@@ -30,7 +37,7 @@ public class AuthController {
         return "register";
     }
 
-    // Handle Registration
+    // Handle Registration (Form)
     @PostMapping("/register")
     public String registerUser(
             @RequestParam String fullName,
@@ -40,19 +47,16 @@ public class AuthController {
             Model model) {
         
         try {
-            // Check if passwords match
             if (!password.equals(confirmPassword)) {
                 model.addAttribute("error", "Passwords do not match!");
                 return "register";
             }
 
-            // Check if email already exists
             if (userService.getUserByEmail(email).isPresent()) {
                 model.addAttribute("error", "Email already exists!");
                 return "register";
             }
 
-            // Create new user
             User user = new User();
             user.setFullName(fullName);
             user.setEmail(email);
@@ -74,31 +78,88 @@ public class AuthController {
         return "dashboard";
     }
 
-    // REST API: Register (for API calls)
+    // ============== REST APIs ==============
+
+    // REST API: Login with JWT Token
+    @PostMapping("/api/auth/token")
+    @ResponseBody
+    public ResponseEntity<?> loginAPI(@RequestBody LoginRequest loginRequest) {
+        try {
+            var user = userService.getUserByEmail(loginRequest.getEmail());
+            
+            if (user.isEmpty()) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "User not found");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            User foundUser = user.get();
+            
+            // Verify password
+            if (!passwordEncoder.matches(loginRequest.getPassword(), foundUser.getPassword())) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Invalid password");
+                return ResponseEntity.status(401).body(error);
+            }
+
+            // Generate JWT token
+            String token = jwtUtil.generateToken(foundUser.getEmail());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("email", foundUser.getEmail());
+            response.put("fullName", foundUser.getFullName());
+            response.put("message", "Login successful");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Login failed: " + e.getMessage());
+            return ResponseEntity.status(400).body(error);
+        }
+    }
+
+    // REST API: Register
     @PostMapping("/api/auth/register")
     @ResponseBody
-    public ResponseEntity<User> registerUserAPI(@RequestBody User user) {
+    public ResponseEntity<?> registerUserAPI(@RequestBody User user) {
         try {
+            if (userService.getUserByEmail(user.getEmail()).isPresent()) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Email already exists");
+                return ResponseEntity.status(400).body(error);
+            }
+
             User newUser = userService.registerUser(user);
-            return ResponseEntity.status(201).body(newUser);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "User registered successfully");
+            response.put("user", newUser);
+            return ResponseEntity.status(201).body(response);
         } catch (Exception e) {
-            return ResponseEntity.status(400).build();
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Registration failed: " + e.getMessage());
+            return ResponseEntity.status(400).body(error);
         }
     }
 
     // REST API: Get user by email
     @GetMapping("/api/auth/user/{email}")
     @ResponseBody
-    public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
+    public ResponseEntity<?> getUserByEmail(@PathVariable String email) {
         try {
             var user = userService.getUserByEmail(email);
-            return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(404).build());
+            return user.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(404).build());
         } catch (Exception e) {
-            return ResponseEntity.status(400).build();
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to fetch user");
+            return ResponseEntity.status(400).body(error);
         }
     }
 }
 
+// Login Request DTO
 class LoginRequest {
     private String email;
     private String password;
