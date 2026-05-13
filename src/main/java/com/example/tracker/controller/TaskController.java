@@ -4,6 +4,7 @@ import com.example.tracker.model.Task;
 import com.example.tracker.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -82,5 +83,11 @@ public class TaskController {
         } catch (Exception e) {
             return ResponseEntity.status(404).build();
         }
+    }
+    // Show Kanban Board
+    @GetMapping("/kanban/week/{weekId}")
+    public String showKanbanBoard(@PathVariable Long weekId, Model model) {
+        model.addAttribute("weekId", weekId);
+        return "kanban";
     }
 }
