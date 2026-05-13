@@ -4,17 +4,80 @@ import com.example.tracker.model.User;
 import com.example.tracker.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/api/auth")
+@Controller
 public class AuthController {
 
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    // Show Login Page
+    @GetMapping("/login")
+    public String showLoginPage() {
+        return "login";
+    }
+
+    // Show Register Page
+    @GetMapping("/register")
+    public String showRegisterPage() {
+        return "register";
+    }
+
+    // Handle Registration
     @PostMapping("/register")
-    public ResponseEntity<User> registerUser(@RequestBody User user) {
+    public String registerUser(
+            @RequestParam String fullName,
+            @RequestParam String email,
+            @RequestParam String password,
+            @RequestParam String confirmPassword,
+            Model model) {
+        
+        try {
+            // Check if passwords match
+            if (!password.equals(confirmPassword)) {
+                model.addAttribute("error", "Passwords do not match!");
+                return "register";
+            }
+
+            // Check if email already exists
+            if (userService.getUserByEmail(email).isPresent()) {
+                model.addAttribute("error", "Email already exists!");
+                return "register";
+            }
+
+            // Create new user
+            User user = new User();
+            user.setFullName(fullName);
+            user.setEmail(email);
+            user.setPassword(password);
+
+            userService.registerUser(user);
+            model.addAttribute("success", "Account created successfully!");
+            return "register";
+
+        } catch (Exception e) {
+            model.addAttribute("error", "Registration failed: " + e.getMessage());
+            return "register";
+        }
+    }
+
+    // Show Dashboard
+    @GetMapping("/dashboard")
+    public String showDashboard() {
+        return "dashboard";
+    }
+
+    // REST API: Register (for API calls)
+    @PostMapping("/api/auth/register")
+    @ResponseBody
+    public ResponseEntity<User> registerUserAPI(@RequestBody User user) {
         try {
             User newUser = userService.registerUser(user);
             return ResponseEntity.status(201).body(newUser);
@@ -23,21 +86,9 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@RequestBody LoginRequest request) {
-        try {
-            boolean isAuthenticated = userService.authenticateUser(request.getEmail(), request.getPassword());
-            if (isAuthenticated) {
-                return ResponseEntity.ok("Login successful");
-            } else {
-                return ResponseEntity.status(401).body("Invalid credentials");
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(400).build();
-        }
-    }
-
-    @GetMapping("/user/{email}")
+    // REST API: Get user by email
+    @GetMapping("/api/auth/user/{email}")
+    @ResponseBody
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
         try {
             var user = userService.getUserByEmail(email);
